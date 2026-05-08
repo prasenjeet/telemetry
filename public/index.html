@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="telemetryApp">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Telemetry Dashboard</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body ng-controller="TelemetryCtrl as vm">
+
+  <header class="header">
+    <h1>Telemetry Dashboard</h1>
+    <div class="status-bar">
+      <span class="badge" ng-class="vm.health.db === 'connected' ? 'badge-ok' : 'badge-warn'">
+        DB: {{ vm.health.db || 'unknown' }}
+      </span>
+      <span class="badge badge-info">Uptime: {{ vm.health.uptime }}s</span>
+      <span class="badge badge-muted">Refreshed: {{ vm.lastRefreshed }}</span>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- Submit Event Form -->
+    <section class="card">
+      <h2>Submit Event</h2>
+      <form ng-submit="vm.submitEvent()" novalidate>
+        <div class="form-row">
+          <label>Event Type
+            <input type="text" ng-model="vm.form.eventType" placeholder="e.g. page_view" required>
+          </label>
+          <label>Device ID
+            <input type="text" ng-model="vm.form.deviceId" placeholder="e.g. dev-001">
+          </label>
+          <label>Session ID
+            <input type="text" ng-model="vm.form.sessionId" placeholder="e.g. sess-abc">
+          </label>
+        </div>
+        <div class="form-row">
+          <label class="full-width">Extra Payload (JSON)
+            <textarea ng-model="vm.form.extra" rows="3" placeholder='{ "page": "/home" }'></textarea>
+          </label>
+        </div>
+        <div class="form-actions">
+          <button type="submit" ng-disabled="vm.submitting">
+            {{ vm.submitting ? 'Sending…' : 'Send Event' }}
+          </button>
+          <span class="msg msg-ok" ng-if="vm.submitMsg.ok">&#10003; {{ vm.submitMsg.ok }}</span>
+          <span class="msg msg-err" ng-if="vm.submitMsg.err">&#10007; {{ vm.submitMsg.err }}</span>
+        </div>
+      </form>
+    </section>
+
+    <!-- Events Table -->
+    <section class="card">
+      <div class="table-header">
+        <h2>Recent Events <span class="count">({{ vm.events.length }})</span></h2>
+        <div class="table-controls">
+          <label>Limit
+            <input type="number" ng-model="vm.limit" min="1" max="500" ng-change="vm.loadEvents()" style="width:70px">
+          </label>
+          <span class="badge" ng-class="vm.source === 'database' ? 'badge-ok' : 'badge-warn'">
+            {{ vm.source || '…' }}
+          </span>
+          <span class="badge badge-warn" ng-if="vm.warning" title="{{ vm.warning }}">fallback</span>
+        </div>
+      </div>
+
+      <div class="empty" ng-if="vm.events.length === 0 && !vm.loading">No events yet.</div>
+      <div class="loading" ng-if="vm.loading">Loading…</div>
+
+      <table ng-if="vm.events.length > 0">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Event Type</th>
+            <th>Device ID</th>
+            <th>Session ID</th>
+            <th>Source IP</th>
+            <th>Payload</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr ng-repeat="e in vm.events track by e.id">
+            <td class="mono nowrap">{{ e.receivedAt | date:'HH:mm:ss' }}</td>
+            <td><span class="tag">{{ e.payload.eventType || '—' }}</span></td>
+            <td class="mono">{{ e.payload.deviceId || e.payload.device_id || '—' }}</td>
+            <td class="mono">{{ e.payload.sessionId || e.payload.session_id || '—' }}</td>
+            <td class="mono">{{ e.source }}</td>
+            <td class="payload-cell">
+              <pre>{{ e.payload | json }}</pre>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+  </main>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.3/angular.min.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>
