@@ -11,9 +11,13 @@ async function main() {
   fileStore.ensureDirectories(config);
 
   // 2. Attempt DB connection (non-fatal — API works without DB)
-  db.connect(config.db)
-    .then(() => console.log('[db] Connected to MS SQL Server'))
-    .catch(err => console.warn('[db] Connection failed (will retry on processor cycles):', err.message));
+  if (config.dbConfigured) {
+    db.connect(config.db)
+      .then(() => console.log('[db] Connected to MS SQL Server'))
+      .catch(err => console.warn('[db] Connection failed (will retry on processor cycles):', err.message));
+  } else {
+    console.warn('[db] No DB credentials configured — running in flat-file-only mode');
+  }
 
   // 3. Start HTTP server
   const server = app.listen(config.port, () => {
